@@ -4,7 +4,7 @@ import (
 	"fmt"
 	cm "mydocker/common"
 	cnt "mydocker/container"
-
+	"os"
 	"github.com/urfave/cli"
 )
 
@@ -20,7 +20,7 @@ func parseRunFlags(context *cli.Context) []string{
 	for _,flag := range context.FlagNames() {
 		flaglist = append(flaglist,fmt.Sprintf("-%v",flag))
 		if flag != "cmds" {
-			if str := context.String(flag); str != "" {
+			if str := context.String(flag); true {
 				flaglist = append(flaglist,str)
 			} //如果真的是空的,就相当于对cpu等资源不作出限制了
 		} else {
@@ -58,7 +58,7 @@ var RunCommand = cli.Command {
 		},
 	},
 	Action: func(context *cli.Context) error {
-		
+
 		flags := []string{}
 		flags = append(flags,"runexec")
 		flags = append(flags,parseRunFlags(context)...)
@@ -68,12 +68,10 @@ var RunCommand = cli.Command {
 
 		//cmdargs = append(cmdargs,cmdlist...)
 		//构造供exec执行的命令及其参数列表
-		/*
+		defer cnt.UnmountAll() 
 		cmd := cnt.GetCloneContainerProc("/proc/self/exe",flags) //开始执行特定的命令,目前就先暂定为shell,也就是什么都没有的意思
-		if err := cmd.Run(); err != nil {
-			fmt.Printf("cmd.Run error: %v\n",err)
-		}
-		fmt.Printf("a container quit successfully!\n")*/
+		cmd.Run()
+		fmt.Printf("a container quit successfully!\n")
 		return nil
 	},
 }
@@ -83,7 +81,6 @@ var ExecCommand = cli.Command {
 	Usage: "exec a program on a running container",
 	Action: func(context *cli.Context) error {
 
-		
 		fmt.Printf("exec a program on a running container,the pid is %v,the argsN is %v\n",cm.GetPidStr(),context.NArg())
 
 		cmdargs := make([]string,context.NArg())
@@ -124,19 +121,19 @@ var RunExecCommand = cli.Command { //该指令是从属于run的,属于run的一
 	},
 
 	Action: func(context *cli.Context) error {
-		defer cnt.UnmountAll() //移除有关文件挂载的部分
-		
+		//移除有关文件挂载的部分
 		if context.String("cid") == "" {
 			return fmt.Errorf("the ContainerId is null when runexec!")
 		} //必须要有一个containerId
 		cm.DPrintf("the argN is %v",context.NArg())
 		//接下来根据context来构造一个cgroup的结构体
-		/*
 		limit := cnt.GetCgroupLimit(context.String("cpus"),context.String("mmem"),context.String("mpid"))
+		
 		cm.DPrintf("will RunExec\n")
 		if err := RunExec(context.StringSlice("cmds"),context.String("cid"),limit); err != nil {
 			return fmt.Errorf("RunExec error %v in RunExecCommand",err)
-		}*/
+		}
+		os.Exit(-1)
 		return nil
 	},
 }

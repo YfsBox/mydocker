@@ -102,6 +102,10 @@ func RemoveCgroupForContainer(containerId string) error { //目前关闭部分�
 }
 
 func configCpu(containerId string,climit float64) error {
+	if climit == -1 {
+		cm.DPrintf("cpu have no config\n")
+		return nil
+	}
 	cpupath := fmt.Sprintf("%v/%v/cpu.cfs_quota_us",cpuCgroupPath,containerId)
 	if err := ioutil.WriteFile(cpupath,[]byte(strconv.Itoa(int(1000000 * climit))),0644); err != nil {
 		return err
@@ -110,6 +114,10 @@ func configCpu(containerId string,climit float64) error {
 }
 
 func configMem(containerId string,mLimit int) error {
+	if mLimit == -1 {
+		cm.DPrintf("mem have no config\n")
+		return nil
+	}
 	mempath := fmt.Sprintf("%v/%v/memory.limit_in_bytes",memoryCgroupPath,containerId)
 	if err := ioutil.WriteFile(mempath,[]byte(strconv.Itoa(mLimit*1024*1024)),0644); err != nil {
 		return err
@@ -118,12 +126,32 @@ func configMem(containerId string,mLimit int) error {
 }
 
 func configPid(containerId string,plimit int) error {
-
+	if plimit == -1 {
+		cm.DPrintf("pid have no config\n")
+		return nil
+	}
 	pidpath := fmt.Sprintf("%v/%v/pids.max",pidsCgroupPath,containerId)
 	if err := ioutil.WriteFile(pidpath,[]byte(strconv.Itoa(plimit)),0644) ; err != nil {
 		return err
 	}
 	return nil
+}
+
+func isempty(str string) string {
+	if str == "" {
+		return "-1" //返回-1
+	}
+	return str
+}
+
+func GetCgroupLimit(climit string,mlimit string,plimit string) *CgroupLimit {
+	limit := new(CgroupLimit)
+	
+	limit.CpuLimit,_ = strconv.ParseFloat(isempty(climit),64)
+	limit.MemLimit,_ = strconv.Atoi(isempty(mlimit))
+	limit.PidLimit,_ = strconv.Atoi(isempty(plimit))
+	
+	return limit
 }
 
 func ConfigCgroupParameter(containerId string,limit *CgroupLimit) error {
