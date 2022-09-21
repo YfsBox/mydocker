@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+
 func CheckRootUser() {
 	if os.Geteuid() != 0 {
 		log.Fatalf("The user is not root\n")

@@ -26,14 +26,19 @@ func RunInit() string { //返回的是id和error
 	return containerId
 }
 
-func RunExec(runcmd []string,containerId string) error {
+func RunExec(runcmd []string,containerId string,limit *cnt.CgroupLimit) error {
 	cm.DPrintf("print args\n")
 	//其中应该有关于containerId的部分,暂且将第二个参数定为containerID
 	containerID := containerId
 	syscall.Sethostname([]byte(containerID)) 
+
 	if err := cnt.CreateCgroupForContainer(containerID); err != nil {
-		//
+		return fmt.Errorf("CreateCgroupForContainer %v err from RunExec",err)
 	}
+	if err := cnt.ConfigCgroupParameter(containerID,limit) ; err != nil {
+		return fmt.Errorf("ConfigCgroupParameter %v err from RunExec",err)
+	}
+
 	cm.DPrintf("the clone proc pid: %v\n",os.Getegid())
 	//挂载proc
 	if err := cnt.SetUpMount(); err != nil {

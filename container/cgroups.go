@@ -6,8 +6,15 @@ import (
 	cm "mydocker/common"
 	"os"
 	"os/exec"
+	"strconv"
 	//"syscall"
 )
+
+type CgroupLimit struct {
+	CpuLimit 	float64
+	MemLimit 	int
+	PidLimit 	int
+}
 
 const (
 	cgroupPath = "/sys/fs/cgroup"
@@ -94,6 +101,42 @@ func RemoveCgroupForContainer(containerId string) error { //目前关闭部分�
 	return nil
 }
 
-func SetCgroupParameter(containerId string,cp float64,mp float64) error {
+func configCpu(containerId string,climit float64) error {
+	cpupath := fmt.Sprintf("%v/%v/cpu.cfs_quota_us",cpuCgroupPath,containerId)
+	if err := ioutil.WriteFile(cpupath,[]byte(strconv.Itoa(int(1000000 * climit))),0644); err != nil {
+		return err
+	}
 	return nil
+}
+
+func configMem(containerId string,mLimit int) error {
+	mempath := fmt.Sprintf("%v/%v/memory.limit_in_bytes",memoryCgroupPath,containerId)
+	if err := ioutil.WriteFile(mempath,[]byte(strconv.Itoa(mLimit*1024*1024)),0644); err != nil {
+		return err
+	}
+	return nil
+}
+
+func configPid(containerId string,plimit int) error {
+
+	pidpath := fmt.Sprintf("%v/%v/pids.max",pidsCgroupPath,containerId)
+	if err := ioutil.WriteFile(pidpath,[]byte(strconv.Itoa(plimit)),0644) ; err != nil {
+		return err
+	}
+	return nil
+}
+
+func ConfigCgroupParameter(containerId string,limit *CgroupLimit) error {
+	
+	if err := configCpu(containerId,limit.CpuLimit); err != nil {
+		return fmt.Errorf("configCpu error %v",err)
+	} 
+	if err := configMem(containerId,limit.MemLimit); err != nil {
+		return fmt.Errorf("configMem error %v",err)
+	}
+	if err := configPid(containerId,limit.PidLimit); err != nil {
+		return fmt.Errorf("configPid error %v",err)
+	}
+	return nil
+
 }
