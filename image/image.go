@@ -38,7 +38,7 @@ func ProcessLayers(ImageHash string) error {
 
 	for _,layer := range manis[0].Layers {
 		layerFile := fmt.Sprintf("%v/%v/%v",cm.GetTmpPath(),ImageHash,layer)
-		dstPath := fmt.Sprintf("%v/%v",layerPath,layer[:12])
+		dstPath := fmt.Sprintf("%v/%v/%v/fs",cm.GetImagePath(),ImageHash,layer[:12])
 
 		cm.DPrintf("The layerFile is %v,and the dstPath is %v",layerFile,dstPath)
 		if err := os.MkdirAll(dstPath,0757); err != nil { //首先创建目标文件夹,位于layer文件夹之下
