@@ -16,9 +16,11 @@ func CheckRootUser() {
 }
 
 func InitMyDockerDirs() error {
-	mydockerPath := GetMyDockerPath()
-	if err := os.MkdirAll(mydockerPath,0755);err != nil {
-		return fmt.Errorf("Mkdir(%v) failed: %v",mydockerPath,err)
+	dirlist := [...]string { mydockerPathRoot,mydockerLibRoot,GetMyDockerPath(),GetImagePath(),GetTmpPath(),}
+	for _,path := range dirlist {
+		if err := os.MkdirAll((path),0755);err != nil {
+			return fmt.Errorf("Mkdir(%v) failed: %v",path,err)
+		}
 	}
 	return nil
 }

@@ -13,11 +13,14 @@ var Debug = true
 
 const (
 	mydockerPathRoot = "/var/run/mydocker" //这个是需要检查是否已经创建的
-	mydockerImagePath = "var/lib/mydocker/image"
-	mydockerTmpPath = "var/lib/mydocker/tmp"
+	mydockerLibRoot = "/var/lib/mydocker"
+	mydockerImagePath = mydockerLibRoot + "/image"
+	mydockerTmpPath = mydockerLibRoot + "/tmp"
 	procPathRoot = "/proc"
 	cgroupPathRoot = "/sys/fs/cgroup"
 )
+
+
 
 func GetMyDockerPath() string {
 	return mydockerPathRoot
@@ -30,6 +33,16 @@ func GetProcPath() string {
 func GetCgroupPath() string {
 	return cgroupPathRoot
 }
+
+func GetTmpPath() string {
+	return mydockerTmpPath
+}
+
+func GetImagePath() string {
+	return mydockerImagePath
+}
+
+
 
 func JoinPath(root string,sub string) string {
 	return fmt.Sprintf("%v/%v",root,sub)
