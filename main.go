@@ -12,8 +12,8 @@ import (
 
 func imageTest() {
 	cm.InitMyDockerDirs()
-	img.DownloadImageIfNeed("busybox")
-
+	hash,_ := img.DownloadImageIfNeed("busybox")
+	img.ProcessLayers(hash)
 }
 
 func main() {
