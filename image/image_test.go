@@ -5,5 +5,5 @@ import (
 )
 
 func TestDownLoad(t *testing.T) {
-	DownloadImageIfNeed("ubuntu:latest")	
+	DownloadImageIfNeed("madduci/docker-linux-cpp")	
 }

@@ -49,11 +49,20 @@ func ProcessLayers(ImageHash string) error {
 		}
 	}
 
-	manifestImagePath := fmt.Sprintf("%v/%v/manifest.json",cm.GetImagePath(),ImageHash)
-	/*if err := os.CopyFile(manifestPath,manifestImagePath); err != nil {
-		return fmt.Errorf("Copy %v error %v",manifestPath,err)
-	}*/
-	cm.DPrintf("manifestImagePath: %v",manifestImagePath)
+	manifestDstPath := fmt.Sprintf("%v/%v/manifest.json",cm.GetImagePath(),ImageHash)
+
+	//接下来的目标是将manifest.json拷贝到image文件夹下面,并且将sha256文件,也就是config对应的文件拷贝
+	configFile := fmt.Sprintf("%v/%v/%v",cm.GetTmpPath(),ImageHash,manis[0].Config)
+	configDstPath := fmt.Sprintf("%v/%v/%v",cm.GetImagePath(),ImageHash,manis[0].Config)
+
+	if err := cm.CopyFile(configFile,configDstPath); err != nil {
+		return fmt.Errorf("copy %v to %v error %v",configFile,configDstPath,err)
+	}
+	if err := cm.CopyFile(manifestPath,manifestDstPath); err != nil {
+		return fmt.Errorf("copy %v to %v error %v",manifestPath,manifestDstPath,err)
+	}
+
+	cm.DPrintf("manifestImagePath: %v",manifestPath)
 
 	return nil
 }
@@ -87,13 +96,20 @@ func DownloadImageIfNeed(ImageName string) (string,error) {
 }
 
 
-func saveImageLocal(img v1.Image,src string,imgHash string) error {
+func saveImageLocal(img v1.Image,src string,imgHash string) error { //创建image和tmp下的目录文件,并且先放在tmp下
 	
-	imageSavePath := fmt.Sprintf("%v/%v",cm.GetTmpPath(),imgHash)
-	if err := os.MkdirAll(imageSavePath,757); err != nil {
+	imageSavePathTmp := fmt.Sprintf("%v/%v",cm.GetTmpPath(),imgHash)
+	imageSavePath := fmt.Sprintf("%v/%v",cm.GetImagePath(),imgHash)
+
+
+	if err := os.MkdirAll(imageSavePathTmp,757); err != nil {
 		return fmt.Errorf("Mkdir imgSavePath error: %v",err)
 	} //创建文件夹
-	imagePath := imageSavePath + "/package.tar"
+	if err := os.MkdirAll(imageSavePath,757); err != nil {
+		return fmt.Errorf("Mkdir imgSavePath error: %v",err)
+	}
+
+	imagePath := imageSavePathTmp + "/package.tar"
 	cm.DPrintf("save legacy,src %v,path: %v\n",src,imagePath)
 	if err := crane.SaveLegacy(img,src,imagePath); err != nil {
 		return fmt.Errorf("SaveLegacy error %v",err)

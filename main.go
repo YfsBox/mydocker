@@ -12,7 +12,7 @@ import (
 
 func imageTest() {
 	cm.InitMyDockerDirs()
-	hash,_ := img.DownloadImageIfNeed("busybox")
+	hash,_ := img.DownloadImageIfNeed("madduci/docker-linux-cpp")
 	img.ProcessLayers(hash)
 }
 
