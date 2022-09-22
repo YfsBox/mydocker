@@ -53,6 +53,10 @@ func RunExec(runcmd []string,containerId string,limit *cnt.CgroupLimit) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cmd.Run error(%v) in RunExec for %v",err,containerID)
 	}
+	cm.DPrintf("Remove the container's files\n")
+	if err := cnt.RemoveCgroupForContainer(containerID) ; err != nil {
+		return fmt.Errorf("ConfigCgroupParameter %v err from RunExec",err)
+	}
 
 	return nil
 }

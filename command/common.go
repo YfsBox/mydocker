@@ -138,6 +138,19 @@ var RunExecCommand = cli.Command { //该指令是从属于run的,属于run的一
 	},
 }
 
+var PullCommand = cli.Command {
+	Name: "pull",
+	Usage: "pull an image",
+
+	Action: func(context *cli.Context) error {
+
+
+		return nil
+	},
+
+}
+
+
 func InitCliApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = "mydocker"

@@ -13,6 +13,8 @@ var Debug = true
 
 const (
 	mydockerPathRoot = "/var/run/mydocker" //这个是需要检查是否已经创建的
+	mydockerImagePath = "var/lib/mydocker/image"
+	mydockerTmpPath = "var/lib/mydocker/tmp"
 	procPathRoot = "/proc"
 	cgroupPathRoot = "/sys/fs/cgroup"
 )

@@ -28,6 +28,7 @@ const (
 var cgroupList = []string {
 	cpuCgroupPath,
 	memoryCgroupPath,
+	pidsCgroupPath,
 }
 
 func isCgroupRootExist() bool { //判断cgroup根目录(mydocker)是否存在
@@ -41,7 +42,7 @@ func isCgroupRootExist() bool { //判断cgroup根目录(mydocker)是否存在
 
 func InitCgroupRootDirs() error { //创建各subsystem中关于mydocker的根目录
 	for _,path := range cgroupList {
-		if err := os.MkdirAll(path,0755); err != nil { //创建相关的文件夹
+		if err := os.MkdirAll(path,0777); err != nil { //创建相关的文件夹
 			return fmt.Errorf("Mkdir(%v) failed: %v",path,err)
 		}
 	}
@@ -65,17 +66,17 @@ func CreateCgroupForContainer(containerId string) error {
 	for _,rootpath := range cgroupList {
 
 		containpath := cm.JoinPath(rootpath,containerId)
-		if err := os.MkdirAll(containpath,0755); err != nil {
+		if err := os.MkdirAll(containpath,0777); err != nil {
 			return fmt.Errorf("Mkdir(%v) failed: %v from CreateCgroupForContainer %v",containpath,err,containerId)
 		} //没有该Id对应的文件夹,就创建,有则什么也不干
 		//在每个容器对应的文件夹之下,有两个关键的文件需要设置
 		procsPath := cm.JoinPath(containpath,procsSubPath)
 		norPath := cm.JoinPath(containpath,norSubPath)
 
-		if err := ioutil.WriteFile(procsPath,[]byte(cm.GetPidStr()),0700); err != nil {
+		if err := ioutil.WriteFile(procsPath,[]byte(cm.GetPidStr()),0777); err != nil {
 			return fmt.Errorf("WriteFile(%v) failed: %v from CreateCgroupForContainer %v",procsPath,err,containerId)
 		}
-		if err := ioutil.WriteFile(norPath,[]byte("1"),0700); err != nil {
+		if err := ioutil.WriteFile(norPath,[]byte("1"),0777); err != nil {
 			return fmt.Errorf("WriteFile(%v) failed: %v from CreateCgroupForContainer %v",norPath,err,containerId)
 		}
 	}
@@ -92,9 +93,18 @@ func RemoveCgroupForContainer(containerId string) error { //目前关闭部分�
 		if !cm.IsFileExist(containpath) {
 			continue
 		}
+		cm.DPrintf("remove path %v",containpath)
 		rmcmd := exec.Command("rmdir",containpath)
-		//cm.DPrintf("%v\n",containpath)
-		if err := rmcmd.Start(); err != nil {
+
+		out, err := rmcmd.CombinedOutput()
+		if err != nil {
+			fmt.Printf("combined out:n%sn", string(out))
+			//log.Fatalf("cmd.Run() failed with %sn", err)
+		}
+		fmt.Printf("combined out:n%sn", string(out))
+
+		cm.DPrintf("%v\n",containpath)
+		if err := rmcmd.Run(); err != nil {
 			return fmt.Errorf("Rmdir(%v) failed: %v from CreateCgroupForContainer %v",containpath,err,containerId)
 		}
 	}
