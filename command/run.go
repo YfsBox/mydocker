@@ -33,6 +33,15 @@ func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.Cgr
 	containerID := containerId
 	syscall.Sethostname([]byte(containerID))
 
+	cmd := exec.Command(runcmd[0], runcmd[1:]...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	//是不是没有加env的问题??
+	imgConfig := img.ParseContainerConfig(imgHash)
+	cmd.Env = imgConfig.Config.Env
+
 	if err := cnt.CreateCgroupForContainer(containerID); err != nil {
 		return fmt.Errorf("CreateCgroupForContainer %v err from RunExec", err)
 	}
@@ -52,15 +61,6 @@ func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.Cgr
 		}*/
 	cm.DPrintf("Begin Running cmd!")
 
-	cmd := exec.Command(runcmd[0], runcmd[1:]...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	imgConfig := img.ParseContainerConfig(imgHash)
-	//是不是没有加env的问题??
-	cmd.Env = imgConfig.Config.Env
-
 	if err := cmd.Run(); err != nil { //为什么到这里就会终止呢??
 		return fmt.Errorf("cmd.Run error(%v) in RunExec for %v", err, containerID)
 	}
@@ -73,7 +73,6 @@ func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.Cgr
 		if err := cnt.RemoveCgroupForContainer(containerID); err != nil {
 			return fmt.Errorf("ConfigCgroupParameter %v err from RunExec", err)
 		}*/
-
 	return nil
 }
 

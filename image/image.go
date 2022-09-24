@@ -42,6 +42,7 @@ func getConfigForImage(imageId string) string {
 
 func ParseContainerConfig(imghash string) ImageConfig {
 	ConfigPath := getConfigForImage(imghash)
+	cm.DPrintf("config path is %v", ConfigPath)
 	data, err := ioutil.ReadFile(ConfigPath)
 	if err != nil {
 		log.Fatalf("Could not read image config file,err is %v", err)
