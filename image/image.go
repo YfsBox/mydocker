@@ -7,7 +7,9 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/haolipeng/archiver"
 	"io/ioutil"
+	"log"
 	cm "mydocker/common"
+	//cnt "mydocker/container"
 	"os"
 )
 
@@ -15,6 +17,40 @@ type Manifest struct {
 	Config string   `json:"Config"`
 	Tags   []string `json:"RepoTags"`
 	Layers []string `json:"Layers"`
+}
+
+type ImageConfig struct {
+	Config configContent `json:"config"`
+}
+
+type configContent struct {
+	Env []string `json:"Env"`
+	Cmd []string `json:"Cmd"`
+}
+
+func getImagePath(imageId string) string {
+	return fmt.Sprintf("%v/%v", cm.GetImagePath(), imageId)
+}
+
+func GetContainerPath(imageId string) string {
+	return fmt.Sprintf("%v/%v", cm.GetContainerPath(), imageId)
+}
+
+func getConfigForImage(imageId string) string {
+	return fmt.Sprintf("%v/%v.json", getImagePath(imageId), imageId)
+}
+
+func ParseContainerConfig(imghash string) ImageConfig {
+	ConfigPath := getConfigForImage(imghash)
+	data, err := ioutil.ReadFile(ConfigPath)
+	if err != nil {
+		log.Fatalf("Could not read image config file,err is %v", err)
+	}
+	imgConfig := ImageConfig{}
+	if err := json.Unmarshal(data, &imgConfig); err != nil {
+		log.Fatalf("Unable to parse image config data!")
+	}
+	return imgConfig
 }
 
 func ProcessLayers(ImageHash string) ([]string, error) {
@@ -54,7 +90,7 @@ func ProcessLayers(ImageHash string) ([]string, error) {
 
 	//接下来的目标是将manifest.json拷贝到image文件夹下面,并且将sha256文件,也就是config对应的文件拷贝
 	configFile := fmt.Sprintf("%v/%v/%v", cm.GetTmpPath(), ImageHash, manis[0].Config)
-	configDstPath := fmt.Sprintf("%v/%v/%v", cm.GetImagePath(), ImageHash, manis[0].Config)
+	configDstPath := fmt.Sprintf("%v/%v/%v", cm.GetImagePath(), ImageHash, fmt.Sprintf("%v.json", ImageHash))
 
 	if err := cm.CopyFile(configFile, configDstPath); err != nil {
 		return nil, fmt.Errorf("copy %v to %v error %v", configFile, configDstPath, err)

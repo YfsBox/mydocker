@@ -4,22 +4,20 @@ import (
 	"fmt"
 	"golang.org/x/sys/unix"
 	cm "mydocker/common"
+	img "mydocker/image"
 	"os"
 	"strings"
+	"syscall"
 )
+
+func getFsMntPath(containerId string) string {
+	return fmt.Sprintf("%v/%v/fs/mnt", cm.GetContainerPath(), containerId)
+}
 
 func aufsMount(imgfslist []string, containerId string, containerFsPath string, mntPath string) error {
 	mntOptions := "lowerdir=" + strings.Join(imgfslist, ":") + ",upperdir=" + containerFsPath + "/writelayer,workdir=" + containerFsPath + "/worklayer"
 	cm.DPrintf("The mnt options are %v", mntOptions)
-	/*cmd := exec.Command("mount", "-t", "aufs", "-o", mntOptions, "none", mntPath)
 
-	fmt.Printf("the cmd is %v\n", cmd.String())
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("cmd run err %v", err)
-	}*/
 	if err := unix.Mount("none", fmt.Sprintf("%v/mnt", containerFsPath), "overlay", 0, mntOptions); err != nil {
 		fmt.Printf("mount error\n")
 		return fmt.Errorf("mount %v error %v", mntOptions, err)
@@ -46,5 +44,71 @@ func CreateAndMountFs(imgfslist []string, containerId string) error { //创建�
 	if err := aufsMount(imgfslist, containerId, containerFsPath, mntFsPath); err != nil {
 		return fmt.Errorf("the mountfs error %v", err)
 	}
+	return nil
+}
+
+func SetUpMount() error {
+	// systemd 加入linux之后, mount namespace 就变成 shared by default, 所以你必须显示
+	//声明你要这个新的mount namespace独立。
+	/*err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, "")
+	if err != nil {
+		return err
+	}*/
+	//mount proc
+	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
+	err := syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
+	if err != nil {
+		fmt.Printf("mount proc error\n")
+		return fmt.Errorf("mount proc error: %v", err)
+	}
+
+	return nil
+}
+
+func Unmount(file string) error {
+	err := syscall.Unmount(file, 0)
+	return err
+}
+
+func UnmountAll() error {
+	cm.DPrintf("umount proc\n")
+	if err := Unmount("/proc"); err != nil {
+		return fmt.Errorf("Unmount proc error %v", err)
+	}
+	return nil
+}
+
+func ChangeRootDir(containerHash string) error {
+
+	mntPath := getFsMntPath(containerHash)
+
+	fmt.Printf("The mnt Path is %v\n", mntPath)
+	defer fmt.Printf("ChangeRootDir ok\n")
+
+	if err := syscall.Chroot(mntPath); err != nil {
+		fmt.Printf("chroot error")
+		return fmt.Errorf("Chroot %v error %v", mntPath, err)
+	}
+	if err := os.Chdir("/"); err != nil {
+		fmt.Printf("chroot error")
+		return fmt.Errorf("Chdir to / error %v", err)
+	}
+
+	return nil
+}
+
+func RemoveContainerFs(containerId string) error {
+
+	containerPath := img.GetContainerPath(containerId)
+	mntfsPath := fmt.Sprintf("%v/fs/mnt", containerPath)
+
+	if err := Unmount(mntfsPath); err != nil {
+		return fmt.Errorf("Unmount %v error %v", mntfsPath, err)
+	}
+	if err := os.RemoveAll(containerPath); err != nil {
+		cm.DPrintf("Remove %v error %v", containerPath, err)
+		return fmt.Errorf("Remove %v error %v", containerPath, err)
+	}
+
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/urfave/cli"
 	cm "mydocker/common"
 	cnt "mydocker/container"
+	img "mydocker/image"
 	"os"
 )
 
@@ -18,6 +19,9 @@ func parseRunFlags(context *cli.Context) []string {
 
 	flaglist := []string{}
 	for _, flag := range context.FlagNames() {
+		if flag == "img" {
+			continue
+		}
 		flaglist = append(flaglist, fmt.Sprintf("-%v", flag))
 		if flag != "cmds" {
 			if str := context.String(flag); true {
@@ -55,6 +59,9 @@ var RunCommand = cli.Command{
 		&cli.StringSliceFlag{
 			Name: "cmds",
 		},
+		&cli.StringFlag{
+			Name: "img",
+		},
 	},
 	Action: func(context *cli.Context) error {
 
@@ -68,8 +75,31 @@ var RunCommand = cli.Command{
 		//cmdargs = append(cmdargs,cmdlist...)
 		//构造供exec执行的命令及其参数列表
 		defer cnt.UnmountAll()
+
+		hash, err := img.DownloadImageIfNeed(context.String("img"))
+		if err != nil {
+			fmt.Printf("the error is %v", err)
+		}
+		flags = append(flags, "-imghash")
+		flags = append(flags, hash)
+
+		imagefsList, _ := img.ProcessLayers(hash)
+		if err := cnt.CreateAndMountFs(imagefsList, containerId); err != nil { //难道需要将read部分
+			return fmt.Errorf("CreateContainerDirs error %v", err)
+		}
+
 		cmd := cnt.GetCloneContainerProc("/proc/self/exe", flags) //开始执行特定的命令,目前就先暂定为shell,也就是什么都没有的意思
 		cmd.Run()
+		cmd.Wait()
+
+		if err := cnt.RemoveContainerFs(containerId); err != nil {
+			cm.DPrintf("RemoveContainerFs error")
+			return fmt.Errorf("RemoveContainerFs error")
+		}
+		if err := cnt.RemoveCgroupForContainer(containerId); err != nil {
+			return fmt.Errorf("ConfigCgroupParameter %v err from RunExec", err)
+		}
+
 		fmt.Printf("a container quit successfully!\n")
 		return nil
 	},
@@ -117,6 +147,9 @@ var RunExecCommand = cli.Command{ //该指令是从属于run的,属于run的一�
 			Name:  "cid",
 			Usage: "the running container's id",
 		},
+		&cli.StringFlag{
+			Name: "imghash",
+		},
 	},
 
 	Action: func(context *cli.Context) error {
@@ -127,9 +160,8 @@ var RunExecCommand = cli.Command{ //该指令是从属于run的,属于run的一�
 		cm.DPrintf("the argN is %v", context.NArg())
 		//接下来根据context来构造一个cgroup的结构体
 		limit := cnt.GetCgroupLimit(context.String("cpus"), context.String("mmem"), context.String("mpid"))
-
 		cm.DPrintf("will RunExec\n")
-		if err := RunExec(context.StringSlice("cmds"), context.String("cid"), limit); err != nil {
+		if err := RunExec(context.StringSlice("cmds"), context.String("cid"), context.String("imghash"), limit); err != nil {
 			return fmt.Errorf("RunExec error %v in RunExecCommand", err)
 		}
 		os.Exit(-1)

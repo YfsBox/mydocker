@@ -8,6 +8,20 @@ import (
 	"testing"
 )
 
+func initAndCreateFs(imageName string) string {
+	cm.InitMyDockerDirs()
+	hash, err := img.DownloadImageIfNeed(imageName)
+	if err != nil {
+		fmt.Printf("the error is %v", err)
+	}
+	cm.DPrintf("hash is %v\n", hash)
+	imglist, _ := img.ProcessLayers(hash)
+	CreateAndMountFs(imglist, hash)
+	img.RemoveTmpImage(hash)
+
+	return hash
+}
+
 func shownewContainer() string {
 	ctnId := GetContainerId()
 	cm.DPrintf("the new containerId is %v\n", ctnId) //对于这个ContainId暂时还有一定的疑问
@@ -50,22 +64,20 @@ func TestCgroupCreateAndRemove(t *testing.T) { //这里有个问题,当两个终
 }
 
 func TestCreateAndMountFs(t *testing.T) {
-	cm.InitMyDockerDirs()
-	hash, err := img.DownloadImageIfNeed("busybox")
-	if err != nil {
-		fmt.Printf("the error is %v\n", err)
-	}
-	cm.DPrintf("hash is %v\n", hash)
-	imglist, _ := img.ProcessLayers(hash)
-	CreateAndMountFs(imglist, hash)
-	img.RemoveTmpImage(hash)
+	hash := initAndCreateFs("busybox")
+	config := img.ParseContainerConfig(hash)
+	cm.DPrintf("the config of %v is %v,the env is %v", hash, config, config.Config.Env)
+	RemoveContainerFs(hash)
+}
+
+func TestChangeRootDir(t *testing.T) {
+	hash := initAndCreateFs("busybox")
+	ChangeRootDir(hash)
 }
 
 /*
 func TestIsolation(t *testing.T) {
 	cmd := GetCloneContainerProc("")
 	cmd.Run()
-
-
 }
 */

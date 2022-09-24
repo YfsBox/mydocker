@@ -26,17 +26,13 @@ func RunInit() string { //返回的是id和error
 	return containerId
 }
 
-func RunExec(runcmd []string, containerId string, limit *cnt.CgroupLimit) error {
+func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.CgroupLimit) error {
 	cm.DPrintf("print args\n")
+	defer os.Exit(1)
 	//其中应该有关于containerId的部分,暂且将第二个参数定为containerID
 	containerID := containerId
 	syscall.Sethostname([]byte(containerID))
 
-	imagefsList, _ := img.ProcessLayers(containerID)
-
-	if err := cnt.CreateAndMountFs(imagefsList, containerID); err != nil { //难道需要将read部分
-		return fmt.Errorf("CreateContainerDirs error %v", err)
-	}
 	if err := cnt.CreateCgroupForContainer(containerID); err != nil {
 		return fmt.Errorf("CreateCgroupForContainer %v err from RunExec", err)
 	}
@@ -45,23 +41,38 @@ func RunExec(runcmd []string, containerId string, limit *cnt.CgroupLimit) error 
 	}
 
 	cm.DPrintf("the clone proc pid: %v\n", os.Getegid())
-	//挂载proc
-	if err := cnt.SetUpMount(); err != nil {
-		return fmt.Errorf("SetUpMount error(%v) in RunExec for %v", err, containerID)
+	if err := cnt.ChangeRootDir(containerID); err != nil {
+		return fmt.Errorf("ChangeRootDir %v error %v", containerID, err)
 	}
+	//挂载proc
+	/*
+		if err := cnt.SetUpMount(); err != nil {
+			cm.DPrintf("SetUpMount error")
+			return fmt.Errorf("SetUpMount error(%v) in RunExec for %v", err, containerID)
+		}*/
+	cm.DPrintf("Begin Running cmd!")
 
 	cmd := exec.Command(runcmd[0], runcmd[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
+	imgConfig := img.ParseContainerConfig(imgHash)
+	//是不是没有加env的问题??
+	cmd.Env = imgConfig.Config.Env
+
+	if err := cmd.Run(); err != nil { //为什么到这里就会终止呢??
 		return fmt.Errorf("cmd.Run error(%v) in RunExec for %v", err, containerID)
 	}
 	cm.DPrintf("Remove the container's files\n")
-	if err := cnt.RemoveCgroupForContainer(containerID); err != nil {
-		return fmt.Errorf("ConfigCgroupParameter %v err from RunExec", err)
-	}
+	/*
+		if err := cnt.RemoveContainerFs(containerID); err != nil {
+			cm.DPrintf("RemoveContainerFs error")
+			return fmt.Errorf("RemoveContainerFs error")
+		}
+		if err := cnt.RemoveCgroupForContainer(containerID); err != nil {
+			return fmt.Errorf("ConfigCgroupParameter %v err from RunExec", err)
+		}*/
 
 	return nil
 }
