@@ -51,28 +51,22 @@ func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.Cgr
 
 	cm.DPrintf("the clone proc pid: %v\n", os.Getegid())
 	if err := cnt.ChangeRootDir(containerID); err != nil {
+		cm.DPrintf("the ChangeRootDir is %v", err)
 		return fmt.Errorf("ChangeRootDir %v error %v", containerID, err)
 	}
 	//挂载proc
-	/*
-		if err := cnt.SetUpMount(); err != nil {
-			cm.DPrintf("SetUpMount error")
-			return fmt.Errorf("SetUpMount error(%v) in RunExec for %v", err, containerID)
-		}*/
+	if err := cnt.SetUpMount(); err != nil {
+		cm.DPrintf("SetUpMount error")
+		return fmt.Errorf("SetUpMount error(%v) in RunExec for %v", err, containerID)
+	}
 	cm.DPrintf("Begin Running cmd!")
 
 	if err := cmd.Run(); err != nil { //为什么到这里就会终止呢??
+		cm.DPrintf("the cmd.Run error is %v", err)
 		return fmt.Errorf("cmd.Run error(%v) in RunExec for %v", err, containerID)
 	}
 	cm.DPrintf("Remove the container's files\n")
-	/*
-		if err := cnt.RemoveContainerFs(containerID); err != nil {
-			cm.DPrintf("RemoveContainerFs error")
-			return fmt.Errorf("RemoveContainerFs error")
-		}
-		if err := cnt.RemoveCgroupForContainer(containerID); err != nil {
-			return fmt.Errorf("ConfigCgroupParameter %v err from RunExec", err)
-		}*/
+
 	return nil
 }
 
