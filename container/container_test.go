@@ -64,9 +64,10 @@ func TestCgroupCreateAndRemove(t *testing.T) { //这里有个问题,当两个终
 }
 
 func TestCreateAndMountFs(t *testing.T) {
-	hash := initAndCreateFs("busybox")
+	hash := initAndCreateFs("ubuntu:16.04")
 	config := img.ParseContainerConfig(hash)
 	cm.DPrintf("the config of %v is %v,the env is %v", hash, config, config.Config.Env)
+
 	RemoveContainerFs(hash)
 }
 

@@ -3,6 +3,7 @@ package container
 import (
 	"fmt"
 	"golang.org/x/sys/unix"
+	"io/ioutil"
 	cm "mydocker/common"
 	img "mydocker/image"
 	"os"
@@ -50,16 +51,21 @@ func CreateAndMountFs(imgfslist []string, containerId string) error { //创建�
 func SetUpMount() error {
 	// systemd 加入linux之后, mount namespace 就变成 shared by default, 所以你必须显示
 	//声明你要这个新的mount namespace独立。
-	/*err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, "")
+	err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, "")
 	if err != nil {
 		return err
-	}*/
+	}
 	//mount proc
 	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
-	err := syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
+	err = syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
 	if err != nil {
 		fmt.Printf("mount proc error\n")
 		return fmt.Errorf("mount proc error: %v", err)
+	}
+	err = syscall.Mount("tmpfs", "/dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755")
+	if err != nil {
+		fmt.Printf("mount tmpfs error\n")
+		return fmt.Errorf("mount tmpfs error: %v", err)
 	}
 
 	return nil
@@ -85,15 +91,21 @@ func ChangeRootDir(containerHash string) error {
 	fmt.Printf("The mnt Path is %v\n", mntPath)
 	defer fmt.Printf("ChangeRootDir ok\n")
 
-	if err := syscall.Chroot(mntPath); err != nil {
+	if err := unix.Chroot(mntPath); err != nil {
 		fmt.Printf("chroot error")
 		return fmt.Errorf("Chroot %v error %v", mntPath, err)
 	}
+	pwd, _ := os.Getwd()
+	cm.DPrintf("the current dir is %v", pwd)
+
 	if err := os.Chdir("/"); err != nil {
 		fmt.Printf("chroot error")
 		return fmt.Errorf("Chdir to / error %v", err)
 	}
 
+	pwd, _ = os.Getwd()
+	cm.DPrintf("the current dir is %v", pwd)
+	listAll("/bin")
 	return nil
 }
 
@@ -101,6 +113,8 @@ func RemoveContainerFs(containerId string) error {
 
 	containerPath := img.GetContainerPath(containerId)
 	mntfsPath := fmt.Sprintf("%v/fs/mnt", containerPath)
+
+	cm.DPrintf("the mntfsPath is %v", mntfsPath)
 
 	if err := Unmount(mntfsPath); err != nil {
 		return fmt.Errorf("Unmount %v error %v", mntfsPath, err)
@@ -111,4 +125,16 @@ func RemoveContainerFs(containerId string) error {
 	}
 
 	return nil
+}
+
+func listAll(path string) {
+	files, _ := ioutil.ReadDir(path)
+	for _, fi := range files {
+		if fi.IsDir() {
+			//listAll(path + "/" + fi.Name())
+			println(path + "/" + fi.Name())
+		} else {
+			println(path + "/" + fi.Name())
+		}
+	}
 }

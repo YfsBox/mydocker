@@ -34,13 +34,17 @@ func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.Cgr
 	syscall.Sethostname([]byte(containerID))
 
 	cmd := exec.Command(runcmd[0], runcmd[1:]...)
+
+	cm.DPrintf("the cmd is %v", cmd.String())
+
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
 	//是不是没有加env的问题??
 	imgConfig := img.ParseContainerConfig(imgHash)
 	cmd.Env = imgConfig.Config.Env
+
+	cm.DPrintf("the env is %v", cmd.Env)
 
 	if err := cnt.CreateCgroupForContainer(containerID); err != nil {
 		return fmt.Errorf("CreateCgroupForContainer %v err from RunExec", err)
