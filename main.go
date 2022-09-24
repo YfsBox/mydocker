@@ -1,23 +1,17 @@
 package main
 
 import (
-	//"fmt"
-	//"log"
-	//cmd "mydocker/command"
+	"fmt"
+	"log"
+	cmd "mydocker/command"
 	cm "mydocker/common"
-	img "mydocker/image"
-	//cnt "mydocker/container"
-	//"os"
+	"mydocker/container"
+	cnt "mydocker/container"
+	"os"
 )
 
-func imageTest() {
-	cm.InitMyDockerDirs()
-	hash,_ := img.DownloadImageIfNeed("busybox")
-	img.ProcessLayers(hash)
-}
-
 func main() {
-	/*
+
 	if err := cm.InitMyDockerDirs(); err != nil { //如果没有mydocker服务的总文件夹,就创建,否则什么也不做
 		log.Fatalf("InitMyDockerDirs error: %v\n", err)
 	}
@@ -38,6 +32,5 @@ func main() {
 	}
 
 	fmt.Printf("Mydocker done(pid: %v),welcome to use!\n", cm.GetPidStr())
-	*/
-	imageTest()
+
 }

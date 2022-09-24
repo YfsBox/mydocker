@@ -1,32 +1,34 @@
 package container
 
 import (
-	//"os/exec"
+	"fmt"
 	cm "mydocker/common"
+	//"os/exec"
+	img "mydocker/image"
 	"testing"
 )
 
 func shownewContainer() string {
 	ctnId := GetContainerId()
-	cm.DPrintf("the new containerId is %v\n",ctnId) //对于这个ContainId暂时还有一定的疑问
+	cm.DPrintf("the new containerId is %v\n", ctnId) //对于这个ContainId暂时还有一定的疑问
 	return ctnId
 }
 
-func TestCgroupsInitAndRemoveRoot(t *testing.T) {//删除某个Root还是可以的,但是独居mydocker底下的一个目录目前有问题
+func TestCgroupsInitAndRemoveRoot(t *testing.T) { //删除某个Root还是可以的,但是独居mydocker底下的一个目录目前有问题
 	//ctnId := shownewContainer()
 	//反复调用,一定不要忘了开root
-	for i := 0; i <= 2; i ++ {
+	for i := 0; i <= 2; i++ {
 		if err := InitCgroupRootDirs(); err != nil {
-			cm.DPrintf("InitCgroupRootDirs error: %v\n",err)
+			cm.DPrintf("InitCgroupRootDirs error: %v\n", err)
 		}
 	}
-	for i := 0; i <= 2; i ++ { //多次调用Remove尝试
+	for i := 0; i <= 2; i++ { //多次调用Remove尝试
 		if err := RemoveCgroupRootDirs(); err != nil {
-			cm.DPrintf("RemoveCgroupRootDirs error: %v\n",err)
+			cm.DPrintf("RemoveCgroupRootDirs error: %v\n", err)
 		}
 	}
 
-} 
+}
 
 func TestCgroupCreateAndRemove(t *testing.T) { //这里有个问题,当两个终端同时操作某个cgroup文件夹的时候,会导致无法删除(rmdir)
 
@@ -34,17 +36,29 @@ func TestCgroupCreateAndRemove(t *testing.T) { //这里有个问题,当两个终
 
 	InitCgroupRootDirs()
 
-	for i := 0 ; i <= 2; i ++ { //反复删除调用
+	for i := 0; i <= 2; i++ { //反复删除调用
 		if err := CreateCgroupForContainer(ctnId); err != nil {
-			cm.DPrintf("CreateCgroupForContainer error: %v\n",err)
+			cm.DPrintf("CreateCgroupForContainer error: %v\n", err)
 		}
 		if err := RemoveCgroupForContainer(ctnId); err != nil {
-			cm.DPrintf("RemoveCgroupForContainer error: %v\n",err)
+			cm.DPrintf("RemoveCgroupForContainer error: %v\n", err)
 		}
 	}
 
 	RemoveCgroupRootDirs()
 
+}
+
+func TestCreateAndMountFs(t *testing.T) {
+	cm.InitMyDockerDirs()
+	hash, err := img.DownloadImageIfNeed("busybox")
+	if err != nil {
+		fmt.Printf("the error is %v\n", err)
+	}
+	cm.DPrintf("hash is %v\n", hash)
+	imglist, _ := img.ProcessLayers(hash)
+	CreateAndMountFs(imglist, hash)
+	img.RemoveTmpImage(hash)
 }
 
 /*

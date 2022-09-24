@@ -1,13 +1,13 @@
 package command
 
 import (
-	"testing"
-	"os"
 	cm "mydocker/common"
+	"os"
+	"testing"
 )
 
 func TestRun(t *testing.T) {
 	app := InitCliApp()
-	cm.RuningCliApp(app,os.Args)
+	cm.RuningCliApp(app, os.Args)
 
 }

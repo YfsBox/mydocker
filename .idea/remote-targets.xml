@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <targets>
+      <target name="yfs@192.168.85.136:22" type="ssh/sftp" uuid="466fe66b-1e98-40a3-a574-8a3343f534b4">
+        <config>
+          <option name="projectRootOnTarget" value="/home/yfs/mydocker" />
+          <option name="serverName" value="yfs@192.168.85.136:22 password" />
+          <option name="useRsync" value="true" />
+        </config>
+        <ContributedStateBase type="GoLanguageRuntime">
+          <config>
+            <option name="goPath" value="/home/yfs/go" />
+            <option name="goRoot" value="/home/yfs/documents/mydocker/main" />
+          </config>
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+</project>

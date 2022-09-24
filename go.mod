@@ -1,6 +1,6 @@
 module mydocker
 
-go 1.13
+go 1.17
 
 require (
 	github.com/google/go-containerregistry v0.11.0
