@@ -150,12 +150,12 @@ func Untar(dst, src string) (err error) {
 			if err != nil {
 				return err
 			}
-			n, err := io.Copy(file, tr)
+			_, err = io.Copy(file, tr)
 			if err != nil {
 				return err
 			}
 			// 将解压结果输出显示
-			fmt.Printf("成功解压： %s , 共处理了 %d 个字符\n", dstFileDir, n)
+			//fmt.Printf("成功解压： %s , 共处理了 %d 个字符\n", dstFileDir, n)
 
 			// 不要忘记关闭打开的文件，因为它是在 for 循环中，不能使用 defer
 			// 如果想使用 defer 就放在一个单独的函数中

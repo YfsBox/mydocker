@@ -17,7 +17,7 @@ func initAndCreateFs(imageName string) string {
 	cm.DPrintf("hash is %v\n", hash)
 	imglist, _ := img.ProcessLayers(hash)
 	CreateAndMountFs(imglist, hash)
-	img.RemoveTmpImage(hash)
+	//img.RemoveTmpImage(hash)
 
 	return hash
 }

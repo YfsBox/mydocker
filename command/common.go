@@ -177,11 +177,20 @@ var PullCommand = cli.Command{
 	},
 	Action: func(context *cli.Context) error {
 		imgName := context.String("img")
-		if hash, err := img.DownloadImageIfNeed(imgName); err != nil {
+		var hash string
+		var err error
+
+		if hash, err = img.DownloadImageIfNeed(imgName); err != nil {
 			log.Fatalf("download the img %v error", imgName)
-		} else {
-			cm.DPrintf("download the img %v,the hash is %v", imgName, hash)
 		}
+		cm.DPrintf("begin process")
+		if _, err = img.ProcessLayers(hash); err != nil {
+			log.Fatalf("ProcessLayers %v error: %v", hash, err)
+		}
+		if err = img.RemoveTmpImage(hash); err != nil {
+			log.Fatalf("RemoveTmpImage %v error %v", hash, err)
+		}
+
 		return nil
 	},
 }

@@ -181,6 +181,7 @@ func DownloadImageIfNeed(ImageName string) (string, error) {
 		if err := saveImageLocal(image, ImageName, imageHexHash); err != nil {
 			return "", fmt.Errorf("saveImageLocal error:%v", err)
 		}
+		cm.DPrintf("tarImageFiles")
 		if err := tarImageFiles(imageHexHash); err != nil {
 			return "", fmt.Errorf("tarImageFiles error: %v", err)
 		}
@@ -217,7 +218,7 @@ func tarImageFiles(imgHash string) error {
 	path := fmt.Sprintf("%v/%v", cm.GetTmpPath(), imgHash)
 	tarPath := path + "/package.tar"
 
-	if err := archiver.Untar(tarPath, path); err != nil {
+	if err := archiver.Untar(tarPath, path); err != nil { //在tmp文件中解压
 		return fmt.Errorf("Untar %v err %v", tarPath, err)
 	}
 	return nil
