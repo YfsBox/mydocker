@@ -28,6 +28,12 @@ type configContent struct {
 	Cmd []string `json:"Cmd"`
 }
 
+type ImageInfo struct {
+	imageMap ImageMap
+}
+
+type ImageMap map[string]string
+
 func getImagePath(imageId string) string {
 	return fmt.Sprintf("%v/%v", cm.GetImagePath(), imageId)
 }
@@ -105,30 +111,81 @@ func ProcessLayers(ImageHash string) ([]string, error) {
 	return imagefsList, nil
 }
 
+func parseImagesJson(imagesPath string, info *ImageInfo) {
+	if !cm.IsFileExist(imagesPath) {
+		ioutil.WriteFile(imagesPath, []byte("{}"), 0644)
+	} else {
+		data, err := ioutil.ReadFile(imagesPath)
+		if err != nil {
+			log.Fatalf("Could not read images json: %v\n", err)
+		}
+		if err := json.Unmarshal(data, &info.imageMap); err != nil {
+			log.Fatalf("Unable to parse images json: %v\n", err)
+		}
+		cm.DPrintf("the info is %v", info)
+	}
+}
+
+func checkIfNeed(ImageName string, info *ImageInfo) (string, bool) {
+
+	imagesPath := fmt.Sprintf("%v/images.json", cm.GetImagePath())
+
+	parseImagesJson(imagesPath, info)
+
+	data, err := ioutil.ReadFile(imagesPath)
+	if err != nil {
+		log.Fatalf("Could not read images json: %v\n", err)
+	}
+	if err := json.Unmarshal(data, &info.imageMap); err != nil {
+		log.Fatalf("Unable to parse images json: %v\n", err)
+	}
+	cm.DPrintf("the info is %v", info)
+
+	if val, ok := info.imageMap[ImageName]; ok {
+		return val, ok
+	}
+	return "", false
+}
+
+func addImageInfo(ImageName string, ImageHash string, info *ImageInfo) {
+	info.imageMap[ImageName] = ImageHash
+	filebytes, _ := json.Marshal(info.imageMap)
+
+	imagesDBPath := cm.GetImagePath() + "/" + "images.json"
+	if err := ioutil.WriteFile(imagesDBPath, filebytes, 0644); err != nil {
+		log.Fatalf("Unable to save images DB: %v\n", err)
+	}
+}
+
 func DownloadImageIfNeed(ImageName string) (string, error) {
 	if ImageName == "" {
 		return "", fmt.Errorf("ImageName can't be empty!")
 	}
 	var image v1.Image
+	imageInfo := ImageInfo{}
+	imageInfo.imageMap = make(ImageMap)
+	var imageHexHash string
+	var ok bool
 	var err error
-	if image, err = crane.Pull(ImageName); err != nil {
-		return "", fmt.Errorf("Pull %v err!", ImageName)
+	if imageHexHash, ok = checkIfNeed(ImageName, &imageInfo); !ok {
+		cm.DPrintf("Not have this images,begin downloading......")
+		if image, err = crane.Pull(ImageName); err != nil {
+			return "", fmt.Errorf("Pull %v err!", ImageName)
+		}
+		m, _ := image.Manifest() //获取镜像的hash值
+		imageFullHash := m.Config.Digest.Hex
+		imageHexHash = imageFullHash[:12]
+
+		fmt.Printf("the image is %v the imageHexHash is %v", image, imageHexHash)
+
+		if err := saveImageLocal(image, ImageName, imageHexHash); err != nil {
+			return "", fmt.Errorf("saveImageLocal error:%v", err)
+		}
+		if err := tarImageFiles(imageHexHash); err != nil {
+			return "", fmt.Errorf("tarImageFiles error: %v", err)
+		}
+		addImageInfo(ImageName, imageHexHash, &imageInfo) //持久化记录.
 	}
-
-	m, err := image.Manifest() //获取镜像的hash值
-	imageFullHash := m.Config.Digest.Hex
-	imageHexHash := imageFullHash[:12]
-
-	fmt.Printf("the image is %v the imageHexHash is %v", image, imageHexHash)
-
-	if err := saveImageLocal(image, ImageName, imageHexHash); err != nil {
-		return "", fmt.Errorf("saveImageLocal error:%v", err)
-	}
-
-	if err := tarImageFiles(imageHexHash); err != nil {
-		return "", fmt.Errorf("tarImageFiles error: %v", err)
-	}
-
 	return imageHexHash, nil
 }
 
@@ -174,5 +231,22 @@ func RemoveTmpImage(imgHash string) error {
 	if err := os.RemoveAll(tmppath); err != nil {
 		return fmt.Errorf("RemoveAll %v error %v", tmppath, err)
 	}
+	return nil
+}
+
+func ShowImages() error {
+	info := ImageInfo{}
+	info.imageMap = make(ImageMap)
+
+	imagesPath := fmt.Sprintf("%v/images.json", cm.GetImagePath())
+	parseImagesJson(imagesPath, &info)
+
+	fmt.Printf("--------------------------------------------------\n")
+	fmt.Printf("TAG              |           IMAGEHASH |\n")
+	fmt.Printf("--------------------------------------------------\n")
+	for tag, hash := range info.imageMap {
+		fmt.Printf("%v  	| 	 %v |\n", tag, hash)
+	}
+	fmt.Printf("--------------------------------------------------\n")
 	return nil
 }

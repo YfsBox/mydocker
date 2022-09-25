@@ -44,7 +44,7 @@ func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.Cgr
 	imgConfig := img.ParseContainerConfig(imgHash)
 	cmd.Env = imgConfig.Config.Env
 
-	cm.DPrintf("the env is %v", cmd.Env)
+	cm.DPrintf("the env is %v,the path is %v", cmd.Env, cmd.Path)
 
 	if err := cnt.CreateCgroupForContainer(containerID); err != nil {
 		return fmt.Errorf("CreateCgroupForContainer %v err from RunExec", err)

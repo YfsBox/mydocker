@@ -179,6 +179,14 @@ var PullCommand = cli.Command{
 	},
 }
 
+var ImagesCommand = cli.Command{
+	Name:  "images",
+	Usage: "show the images have been downloaded.",
+	Action: func(ctx *cli.Context) error {
+		return img.ShowImages()
+	},
+}
+
 func InitCliApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = "mydocker"
@@ -188,6 +196,7 @@ func InitCliApp() *cli.App {
 		RunCommand,
 		RunExecCommand,
 		ExecCommand,
+		ImagesCommand,
 	}
 
 	return app

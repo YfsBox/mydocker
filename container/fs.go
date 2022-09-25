@@ -51,18 +51,20 @@ func CreateAndMountFs(imgfslist []string, containerId string) error { //创建�
 func SetUpMount() error {
 	// systemd 加入linux之后, mount namespace 就变成 shared by default, 所以你必须显示
 	//声明你要这个新的mount namespace独立。
-	err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, "")
+	/*err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, "")
 	if err != nil {
 		return err
-	}
+	}*/
 	//mount proc
-	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
-	err = syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
-	if err != nil {
-		fmt.Printf("mount proc error\n")
-		return fmt.Errorf("mount proc error: %v", err)
-	}
-	err = syscall.Mount("tmpfs", "/dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755")
+	var err error
+	//defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
+	/*
+		err = unix.Mount("proc", "/proc", "proc", 0, "")
+		if err != nil {
+			fmt.Printf("mount proc error: %v\n", err)
+			return fmt.Errorf("mount proc error: %v", err)
+		}*/
+	err = unix.Mount("tmpfs", "/dev", "tmpfs", 0, "mode=755")
 	if err != nil {
 		fmt.Printf("mount tmpfs error\n")
 		return fmt.Errorf("mount tmpfs error: %v", err)
@@ -103,9 +105,6 @@ func ChangeRootDir(containerHash string) error {
 		return fmt.Errorf("Chdir to / error %v", err)
 	}
 
-	pwd, _ = os.Getwd()
-	cm.DPrintf("the current dir is %v", pwd)
-	listAll("/bin")
 	return nil
 }
 
