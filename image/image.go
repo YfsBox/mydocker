@@ -139,7 +139,7 @@ func checkIfNeed(ImageName string, info *ImageInfo) (string, bool) {
 	if err := json.Unmarshal(data, &info.imageMap); err != nil {
 		log.Fatalf("Unable to parse images json: %v\n", err)
 	}
-	cm.DPrintf("the info is %v", info)
+	//cm.DPrintf("the info is %v", info)
 
 	if val, ok := info.imageMap[ImageName]; ok {
 		return val, ok

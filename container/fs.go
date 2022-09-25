@@ -7,6 +7,7 @@ import (
 	cm "mydocker/common"
 	img "mydocker/image"
 	"os"
+	"os/exec"
 	"strings"
 	"syscall"
 )
@@ -51,19 +52,19 @@ func CreateAndMountFs(imgfslist []string, containerId string) error { //创建�
 func SetUpMount() error {
 	// systemd 加入linux之后, mount namespace 就变成 shared by default, 所以你必须显示
 	//声明你要这个新的mount namespace独立。
-	/*err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, "")
+	err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, "")
 	if err != nil {
 		return err
-	}*/
+	}
 	//mount proc
-	var err error
+	//var err error
 	//defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
-	/*
-		err = unix.Mount("proc", "/proc", "proc", 0, "")
-		if err != nil {
-			fmt.Printf("mount proc error: %v\n", err)
-			return fmt.Errorf("mount proc error: %v", err)
-		}*/
+
+	err = unix.Mount("proc", "/proc", "proc", 0, "")
+	if err != nil {
+		fmt.Printf("mount proc error: %v\n", err)
+		return fmt.Errorf("mount proc error: %v", err)
+	}
 	err = unix.Mount("tmpfs", "/dev", "tmpfs", 0, "mode=755")
 	if err != nil {
 		fmt.Printf("mount tmpfs error\n")
@@ -79,10 +80,15 @@ func Unmount(file string) error {
 }
 
 func UnmountAll() error {
-	cm.DPrintf("umount proc\n")
-	if err := Unmount("/proc"); err != nil {
-		return fmt.Errorf("Unmount proc error %v", err)
+
+	unmountList := [...]string{"/dev", "/proc", "/"}
+
+	for _, fs := range unmountList {
+		if err := unix.Unmount(fs, 0); err != nil {
+			return fmt.Errorf("Unmount %v error %v", fs, err)
+		}
 	}
+
 	return nil
 }
 
@@ -114,6 +120,12 @@ func RemoveContainerFs(containerId string) error {
 	mntfsPath := fmt.Sprintf("%v/fs/mnt", containerPath)
 
 	cm.DPrintf("the mntfsPath is %v", mntfsPath)
+
+	//lsofcmd := exec.Command("lsof | grep /var/lib/mydocker/container/BpLnfgDsc2WD/fs/mnt")
+	opts := fmt.Sprintf("lsof | grep /var/lib/mydocker/container/%v/fs/mnt", containerId)
+	c := exec.Command("bash", "-c", opts)
+	out, _ := c.Output()
+	cm.DPrintf("the out is:\n%v", out)
 
 	if err := Unmount(mntfsPath); err != nil {
 		return fmt.Errorf("Unmount %v error %v", mntfsPath, err)

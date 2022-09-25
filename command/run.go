@@ -71,6 +71,11 @@ func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.Cgr
 	}
 	cm.DPrintf("Remove the container's files\n")
 
+	cm.DPrintf("Unmount all\n")
+	if err := cnt.UnmountAll(); err != nil {
+		return fmt.Errorf("Unmount all error: %v", err)
+	}
+
 	return nil
 }
 

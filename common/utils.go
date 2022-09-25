@@ -7,9 +7,11 @@ import (
 	"github.com/urfave/cli"
 	"io"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 )
 
 var Debug = true
@@ -198,4 +200,28 @@ func CopyFile(src, dst string) error {
 		return err
 	}
 	return nil
+}
+
+var defaultLetters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+// RandomString returns a random string with a fixed length
+func randomString(n int, allowedChars ...[]rune) string {
+	var letters []rune
+
+	if len(allowedChars) == 0 {
+		letters = defaultLetters
+	} else {
+		letters = allowedChars[0]
+	}
+	rand.Seed(time.Now().Unix())
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+
+	return string(b)
+}
+
+func RandomString(n int) string {
+	return randomString(n, defaultLetters)
 }

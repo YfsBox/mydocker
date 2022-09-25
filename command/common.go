@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"github.com/urfave/cli"
+	"log"
 	cm "mydocker/common"
 	cnt "mydocker/container"
 	img "mydocker/image"
@@ -74,7 +75,6 @@ var RunCommand = cli.Command{
 
 		//cmdargs = append(cmdargs,cmdlist...)
 		//构造供exec执行的命令及其参数列表
-		defer cnt.UnmountAll()
 
 		hash, err := img.DownloadImageIfNeed(context.String("img"))
 		if err != nil {
@@ -93,14 +93,12 @@ var RunCommand = cli.Command{
 		cmd.Wait()
 
 		if err := cnt.RemoveContainerFs(containerId); err != nil {
-			cm.DPrintf("RemoveContainerFs error")
-			return fmt.Errorf("RemoveContainerFs error")
+			log.Fatalf("RemoveContainerFs error %v", err)
 		}
 		if err := cnt.RemoveCgroupForContainer(containerId); err != nil {
-			return fmt.Errorf("ConfigCgroupParameter %v err from RunExec", err)
+			log.Fatalf("ConfigCgroupParameter %v err from RunExec", err)
 		}
-
-		fmt.Printf("a container quit successfully!\n")
+		//fmt.Printf("a container quit successfully!\n")
 		return nil
 	},
 }
@@ -172,9 +170,18 @@ var RunExecCommand = cli.Command{ //该指令是从属于run的,属于run的一�
 var PullCommand = cli.Command{
 	Name:  "pull",
 	Usage: "pull an image",
-
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name: "img",
+		},
+	},
 	Action: func(context *cli.Context) error {
-
+		imgName := context.String("img")
+		if hash, err := img.DownloadImageIfNeed(imgName); err != nil {
+			log.Fatalf("download the img %v error", imgName)
+		} else {
+			cm.DPrintf("download the img %v,the hash is %v", imgName, hash)
+		}
 		return nil
 	},
 }
@@ -197,6 +204,7 @@ func InitCliApp() *cli.App {
 		RunExecCommand,
 		ExecCommand,
 		ImagesCommand,
+		PullCommand,
 	}
 
 	return app

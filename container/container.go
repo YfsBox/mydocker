@@ -1,8 +1,6 @@
 package container
 
 import (
-	"fmt"
-	"math/rand"
 	cm "mydocker/common"
 	"os"
 	"os/exec"
@@ -10,11 +8,7 @@ import (
 )
 
 func GetContainerId() string {
-	randBytes := make([]byte, 6)
-	rand.Read(randBytes)
-	return fmt.Sprintf("%02x%02x%02x%02x%02x%02x",
-		randBytes[0], randBytes[1], randBytes[2],
-		randBytes[3], randBytes[4], randBytes[5])
+	return cm.RandomString(12)
 }
 
 func GetCloneContainerProc(runcmd string, cmdargs []string) *exec.Cmd {
