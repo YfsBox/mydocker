@@ -76,14 +76,15 @@ var RunCommand = cli.Command{
 		//cmdargs = append(cmdargs,cmdlist...)
 		//构造供exec执行的命令及其参数列表
 
-		hash, err := img.DownloadImageIfNeed(context.String("img"))
+		hash, need, err := img.DownloadImageIfNeed(context.String("img"))
 		if err != nil {
 			fmt.Printf("the error is %v", err)
 		}
 		flags = append(flags, "-imghash")
 		flags = append(flags, hash)
 
-		imagefsList, _ := img.ProcessLayers(hash)
+		imagefsList, _ := img.ProcessLayers(hash, need)
+		img.RemoveTmpImage(hash)
 		if err := cnt.CreateAndMountFs(imagefsList, containerId); err != nil { //难道需要将read部分
 			return fmt.Errorf("CreateContainerDirs error %v", err)
 		}
@@ -179,12 +180,13 @@ var PullCommand = cli.Command{
 		imgName := context.String("img")
 		var hash string
 		var err error
+		var need bool
 
-		if hash, err = img.DownloadImageIfNeed(imgName); err != nil {
+		if hash, need, err = img.DownloadImageIfNeed(imgName); err != nil {
 			log.Fatalf("download the img %v error", imgName)
 		}
 		cm.DPrintf("begin process")
-		if _, err = img.ProcessLayers(hash); err != nil {
+		if _, err = img.ProcessLayers(hash, need); err != nil {
 			log.Fatalf("ProcessLayers %v error: %v", hash, err)
 		}
 		if err = img.RemoveTmpImage(hash); err != nil {

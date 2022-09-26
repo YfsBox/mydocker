@@ -60,15 +60,19 @@ func ParseContainerConfig(imghash string) ImageConfig {
 	return imgConfig
 }
 
-func ProcessLayers(ImageHash string) ([]string, error) {
+func ProcessLayers(ImageHash string, need bool) ([]string, error) {
 
 	layerPath := fmt.Sprintf("%v/%v/%v", cm.GetTmpPath(), ImageHash, "layer")
 	if err := os.MkdirAll(layerPath, 0757); err != nil {
 		return nil, fmt.Errorf("mkdir %v error %v", layerPath, err)
 	}
-
-	manifestPath := fmt.Sprintf("%v/%v/manifest.json", cm.GetTmpPath(), ImageHash)
-	cm.DPrintf("%v", manifestPath)
+	var manifestPath string
+	if need {
+		manifestPath = fmt.Sprintf("%v/%v/manifest.json", cm.GetTmpPath(), ImageHash)
+	} else {
+		manifestPath = fmt.Sprintf("%v/%v/manifest.json", cm.GetImagePath(), ImageHash)
+	}
+	//cm.DPrintf("%v", manifestPath)
 	manis := []Manifest{}
 
 	content, _ := ioutil.ReadFile(manifestPath)
@@ -82,7 +86,10 @@ func ProcessLayers(ImageHash string) ([]string, error) {
 	for _, layer := range manis[0].Layers {
 		layerFile := fmt.Sprintf("%v/%v/%v", cm.GetTmpPath(), ImageHash, layer)
 		dstPath := fmt.Sprintf("%v/%v/%v/fs", cm.GetImagePath(), ImageHash, layer[:12])
-
+		imagefsList = append(imagefsList, dstPath)
+		if !need {
+			continue
+		}
 		cm.DPrintf("The layerFile is %v,and the dstPath is %v", layerFile, dstPath)
 		if err := os.MkdirAll(dstPath, 0757); err != nil { //首先创建目标文件夹,位于layer文件夹之下
 			return nil, fmt.Errorf("Mkdir %v error %v", dstPath, err)
@@ -90,9 +97,10 @@ func ProcessLayers(ImageHash string) ([]string, error) {
 		if err := cm.Untar(dstPath, layerFile); err != nil { //这个地方有点问题
 			return nil, fmt.Errorf("Untar %v error %v", layerFile, err)
 		}
-		imagefsList = append(imagefsList, dstPath)
 	}
-
+	if !need {
+		return imagefsList, nil
+	}
 	manifestDstPath := fmt.Sprintf("%v/%v/manifest.json", cm.GetImagePath(), ImageHash)
 
 	//接下来的目标是将manifest.json拷贝到image文件夹下面,并且将sha256文件,也就是config对应的文件拷贝
@@ -157,9 +165,9 @@ func addImageInfo(ImageName string, ImageHash string, info *ImageInfo) {
 	}
 }
 
-func DownloadImageIfNeed(ImageName string) (string, error) {
+func DownloadImageIfNeed(ImageName string) (string, bool, error) {
 	if ImageName == "" {
-		return "", fmt.Errorf("ImageName can't be empty!")
+		return "", false, fmt.Errorf("ImageName can't be empty!")
 	}
 	var image v1.Image
 	imageInfo := ImageInfo{}
@@ -170,24 +178,24 @@ func DownloadImageIfNeed(ImageName string) (string, error) {
 	if imageHexHash, ok = checkIfNeed(ImageName, &imageInfo); !ok {
 		cm.DPrintf("Not have this images,begin downloading......")
 		if image, err = crane.Pull(ImageName); err != nil {
-			return "", fmt.Errorf("Pull %v err!", ImageName)
+			return "", true, fmt.Errorf("Pull %v err!", ImageName)
 		}
 		m, _ := image.Manifest() //获取镜像的hash值
 		imageFullHash := m.Config.Digest.Hex
 		imageHexHash = imageFullHash[:12]
 
-		fmt.Printf("the image is %v the imageHexHash is %v", image, imageHexHash)
+		cm.DPrintf("the imageHexHash is %v", imageHexHash)
 
 		if err := saveImageLocal(image, ImageName, imageHexHash); err != nil {
-			return "", fmt.Errorf("saveImageLocal error:%v", err)
+			return "", true, fmt.Errorf("saveImageLocal error:%v", err)
 		}
-		cm.DPrintf("tarImageFiles")
+		cm.DPrintf("tar ImageFiles......")
 		if err := tarImageFiles(imageHexHash); err != nil {
-			return "", fmt.Errorf("tarImageFiles error: %v", err)
+			return "", true, fmt.Errorf("tarImageFiles error: %v", err)
 		}
 		addImageInfo(ImageName, imageHexHash, &imageInfo) //持久化记录.
 	}
-	return imageHexHash, nil
+	return imageHexHash, !ok, nil
 }
 
 func saveImageLocal(img v1.Image, src string, imgHash string) error { //创建image和tmp下的目录文件,并且先放在tmp下
@@ -203,11 +211,11 @@ func saveImageLocal(img v1.Image, src string, imgHash string) error { //创建im
 	}
 
 	imagePath := imageSavePathTmp + "/package.tar"
-	cm.DPrintf("save legacy,src %v,path: %v\n", src, imagePath)
+	cm.DPrintf("save legacy......,src %v,path: %v\n", src, imagePath)
 	if err := crane.SaveLegacy(img, src, imagePath); err != nil {
 		return fmt.Errorf("SaveLegacy error %v", err)
 	}
-	cm.DPrintf("Save ok")
+	cm.DPrintf("SaveLegacy ok!")
 
 	return nil
 
