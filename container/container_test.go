@@ -10,12 +10,12 @@ import (
 
 func initAndCreateFs(imageName string) string {
 	cm.InitMyDockerDirs()
-	hash, err := img.DownloadImageIfNeed(imageName)
+	hash, need, err := img.DownloadImageIfNeed(imageName)
 	if err != nil {
 		fmt.Printf("the error is %v", err)
 	}
 	cm.DPrintf("hash is %v\n", hash)
-	imglist, _ := img.ProcessLayers(hash)
+	imglist, _ := img.ProcessLayers(hash, need)
 	CreateAndMountFs(imglist, hash)
 	//img.RemoveTmpImage(hash)
 

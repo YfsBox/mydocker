@@ -183,7 +183,7 @@ var PullCommand = cli.Command{
 		var need bool
 
 		if hash, need, err = img.DownloadImageIfNeed(imgName); err != nil {
-			log.Fatalf("download the img %v error", imgName)
+			log.Fatalf("download the img %v error %v", imgName, err)
 		}
 		cm.DPrintf("begin process")
 		if _, err = img.ProcessLayers(hash, need); err != nil {
