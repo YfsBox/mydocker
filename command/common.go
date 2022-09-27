@@ -156,10 +156,9 @@ var RunExecCommand = cli.Command{ //该指令是从属于run的,属于run的一�
 		if context.String("cid") == "" {
 			return fmt.Errorf("the ContainerId is null when runexec!")
 		} //必须要有一个containerId
-		cm.DPrintf("the argN is %v", context.NArg())
 		//接下来根据context来构造一个cgroup的结构体
 		limit := cnt.GetCgroupLimit(context.String("cpus"), context.String("mmem"), context.String("mpid"))
-		cm.DPrintf("will RunExec\n")
+		cm.DPrintf("will Begin RunExec!\n")
 		if err := RunExec(context.StringSlice("cmds"), context.String("cid"), context.String("imghash"), limit); err != nil {
 			return fmt.Errorf("RunExec error %v in RunExecCommand", err)
 		}

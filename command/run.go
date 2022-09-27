@@ -27,7 +27,6 @@ func RunInit() string { //返回的是id和error
 }
 
 func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.CgroupLimit) error {
-	cm.DPrintf("print args\n")
 	defer os.Exit(1)
 	//其中应该有关于containerId的部分,暂且将第二个参数定为containerID
 	containerID := containerId
@@ -40,11 +39,11 @@ func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.Cgr
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	//是不是没有加env的问题??
+
 	imgConfig := img.ParseContainerConfig(imgHash)
 	cmd.Env = imgConfig.Config.Env
 
-	cm.DPrintf("the env is %v,the path is %v", cmd.Env, cmd.Path)
+	//cm.DPrintf("the env is %v,the path is %v", cmd.Env, cmd.Path)
 
 	if err := cnt.CreateCgroupForContainer(containerID); err != nil {
 		return fmt.Errorf("CreateCgroupForContainer %v err from RunExec", err)
@@ -52,8 +51,7 @@ func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.Cgr
 	if err := cnt.ConfigCgroupParameter(containerID, limit); err != nil {
 		return fmt.Errorf("ConfigCgroupParameter %v err from RunExec", err)
 	}
-
-	cm.DPrintf("the clone proc pid: %v\n", os.Getegid())
+	//cm.DPrintf("the clone proc pid: %v\n", os.Getegid())
 	if err := cnt.ChangeRootDir(containerID); err != nil {
 		cm.DPrintf("the ChangeRootDir is %v", err)
 		return fmt.Errorf("ChangeRootDir %v error %v", containerID, err)

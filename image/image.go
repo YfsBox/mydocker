@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	cm "mydocker/common"
-	//cnt "mydocker/container"
 	"os"
 )
 
@@ -48,7 +47,6 @@ func getConfigForImage(imageId string) string {
 
 func ParseContainerConfig(imghash string) ImageConfig {
 	ConfigPath := getConfigForImage(imghash)
-	cm.DPrintf("config path is %v", ConfigPath)
 	data, err := ioutil.ReadFile(ConfigPath)
 	if err != nil {
 		log.Fatalf("Could not read image config file,err is %v", err)
@@ -72,11 +70,10 @@ func ProcessLayers(ImageHash string, need bool) ([]string, error) {
 	} else {
 		manifestPath = fmt.Sprintf("%v/%v/manifest.json", cm.GetImagePath(), ImageHash)
 	}
-	//cm.DPrintf("%v", manifestPath)
 	manis := []Manifest{}
 
 	content, _ := ioutil.ReadFile(manifestPath)
-	cm.DPrintf("begin unmarshal")
+	//cm.DPrintf("begin unmarshal")
 	if err := json.Unmarshal(content, &manis); err != nil {
 		cm.DPrintf("unmarshal error %v", err)
 		return nil, fmt.Errorf("the json parse to mani error:%v", err)
@@ -90,7 +87,7 @@ func ProcessLayers(ImageHash string, need bool) ([]string, error) {
 		if !need {
 			continue
 		}
-		cm.DPrintf("The layerFile is %v,and the dstPath is %v", layerFile, dstPath)
+		//cm.DPrintf("The layerFile is %v,and the dstPath is %v", layerFile, dstPath)
 		if err := os.MkdirAll(dstPath, 0757); err != nil { //首先创建目标文件夹,位于layer文件夹之下
 			return nil, fmt.Errorf("Mkdir %v error %v", dstPath, err)
 		}
@@ -130,7 +127,6 @@ func parseImagesJson(imagesPath string, info *ImageInfo) {
 		if err := json.Unmarshal(data, &info.imageMap); err != nil {
 			log.Fatalf("Unable to parse images json: %v\n", err)
 		}
-		cm.DPrintf("the info is %v", info)
 	}
 }
 
@@ -194,6 +190,8 @@ func DownloadImageIfNeed(ImageName string) (string, bool, error) {
 			return "", true, fmt.Errorf("tarImageFiles error: %v", err)
 		}
 		addImageInfo(ImageName, imageHexHash, &imageInfo) //持久化记录.
+	} else {
+		cm.DPrintf("The image has alreay exist!")
 	}
 	return imageHexHash, !ok, nil
 }
@@ -235,8 +233,7 @@ func tarImageFiles(imgHash string) error {
 func RemoveTmpImage(imgHash string) error {
 
 	tmppath := fmt.Sprintf("%v/%v", cm.GetTmpPath(), imgHash)
-	fmt.Printf("The path is %v", tmppath)
-
+	//fmt.Printf("The path is %v", tmppath)
 	if err := os.RemoveAll(tmppath); err != nil {
 		return fmt.Errorf("RemoveAll %v error %v", tmppath, err)
 	}

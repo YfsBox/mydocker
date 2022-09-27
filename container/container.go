@@ -13,11 +13,7 @@ func GetContainerId() string {
 
 func GetCloneContainerProc(runcmd string, cmdargs []string) *exec.Cmd {
 
-	cm.DPrintf("The runcmd is %v,the len of cmdargs is %v\n", runcmd, len(cmdargs))
-
-	for _, arg := range cmdargs {
-		cm.DPrintf("arg: %v", arg)
-	}
+	//cm.DPrintf("The runcmd is %v,the len of cmdargs is %v\n", runcmd, len(cmdargs))
 	cmd := exec.Command(runcmd, cmdargs[0:]...)
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{

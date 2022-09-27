@@ -18,7 +18,7 @@ func getFsMntPath(containerId string) string {
 
 func aufsMount(imgfslist []string, containerId string, containerFsPath string, mntPath string) error {
 	mntOptions := "lowerdir=" + strings.Join(imgfslist, ":") + ",upperdir=" + containerFsPath + "/writelayer,workdir=" + containerFsPath + "/worklayer"
-	cm.DPrintf("The mnt options are %v", mntOptions)
+	//cm.DPrintf("The mnt options are %v", mntOptions)
 
 	if err := unix.Mount("none", fmt.Sprintf("%v/mnt", containerFsPath), "overlay", 0, mntOptions); err != nil {
 		fmt.Printf("mount error\n")
@@ -96,15 +96,13 @@ func ChangeRootDir(containerHash string) error {
 
 	mntPath := getFsMntPath(containerHash)
 
-	fmt.Printf("The mnt Path is %v\n", mntPath)
+	//fmt.Printf("The mnt Path is %v\n", mntPath)
 	defer fmt.Printf("ChangeRootDir ok\n")
 
 	if err := unix.Chroot(mntPath); err != nil {
 		fmt.Printf("chroot error")
 		return fmt.Errorf("Chroot %v error %v", mntPath, err)
 	}
-	pwd, _ := os.Getwd()
-	cm.DPrintf("the current dir is %v", pwd)
 
 	if err := os.Chdir("/"); err != nil {
 		fmt.Printf("chroot error")
@@ -121,7 +119,6 @@ func RemoveContainerFs(containerId string) error {
 
 	cm.DPrintf("the mntfsPath is %v", mntfsPath)
 
-	//lsofcmd := exec.Command("lsof | grep /var/lib/mydocker/container/BpLnfgDsc2WD/fs/mnt")
 	opts := fmt.Sprintf("lsof | grep /var/lib/mydocker/container/%v/fs/mnt", containerId)
 	c := exec.Command("bash", "-c", opts)
 	out, _ := c.Output()
