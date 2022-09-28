@@ -111,7 +111,7 @@ func ProcessLayers(ImageHash string, need bool) ([]string, error) {
 		return nil, fmt.Errorf("copy %v to %v error %v", manifestPath, manifestDstPath, err)
 	}
 
-	cm.DPrintf("manifestImagePath: %v", manifestPath)
+	//cm.DPrintf("manifestImagePath: %v", manifestPath)
 
 	return imagefsList, nil
 }
@@ -209,7 +209,7 @@ func saveImageLocal(img v1.Image, src string, imgHash string) error { //创建im
 	}
 
 	imagePath := imageSavePathTmp + "/package.tar"
-	cm.DPrintf("save legacy......,src %v,path: %v\n", src, imagePath)
+	//cm.DPrintf("save legacy......,src %v,path: %v\n", src, imagePath)
 	if err := crane.SaveLegacy(img, src, imagePath); err != nil {
 		return fmt.Errorf("SaveLegacy error %v", err)
 	}

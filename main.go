@@ -6,7 +6,6 @@ import (
 	cmd "mydocker/command"
 	cm "mydocker/common"
 	"mydocker/container"
-	cnt "mydocker/container"
 	"os"
 )
 
@@ -21,15 +20,13 @@ func main() {
 	} //检查Cgroups控制组中cpu,memory,pids等subsystem有没有创建好有关于mydocker的根目录
 
 	cm.CheckRootUser()
-
 	app := cmd.InitCliApp()
 	cm.RuningCliApp(app, os.Args)
-
 	//cm.RemoveWhenQuit()
-	cm.DPrintf("the container quit,begin remove cgroup\n")
-	if err := cnt.RemoveCgroupRootDirs(); err != nil {
+	//cm.DPrintf("the container quit,begin remove cgroup\n")
+	/*if err := cnt.RemoveCgroupRootDirs(); err != nil {
 		log.Fatalf("The RemoveWhenQuit error: %v", err)
-	}
+	}*/
 
 	fmt.Printf("Mydocker done(pid: %v),welcome to use!\n", cm.GetPidStr())
 

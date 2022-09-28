@@ -42,26 +42,30 @@ func parseRunFlags(context *cli.Context) []string {
 
 var RunCommand = cli.Command{
 	Name:  "run",
-	Usage: "run a container from a image",
+	Usage: "在指定镜像上运行一个容器",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name: "cpus",
+			Name:  "cpus",
+			Usage: "对cpu的限制,限制最大cpu占用率.",
 		},
 		&cli.StringFlag{
-			Name: "mpid",
+			Name:  "mpid",
+			Usage: "对于pid的限制,",
 		},
 		&cli.StringFlag{
 			Name: "mmem",
 		},
 		&cli.StringFlag{
 			Name:  "name",
-			Usage: "the name of running container",
+			Usage: "给你要运行的容器起一个名字",
 		},
 		&cli.StringSliceFlag{
-			Name: "cmds",
+			Name:  "cmds",
+			Usage: "给容器指定的运行命令,比如/bin/bash",
 		},
 		&cli.StringFlag{
-			Name: "img",
+			Name:  "img",
+			Usage: "该容器运行所基于的镜像",
 		},
 	},
 	Action: func(context *cli.Context) error {
@@ -69,7 +73,7 @@ var RunCommand = cli.Command{
 		flags := []string{}
 		flags = append(flags, "runexec")
 		flags = append(flags, parseRunFlags(context)...)
-		containerId := RunInit()
+		containerId := cnt.GetContainerId()
 		flags = append(flags, "-cid")
 		flags = append(flags, containerId)
 
@@ -97,26 +101,9 @@ var RunCommand = cli.Command{
 			log.Fatalf("RemoveContainerFs error %v", err)
 		}
 		if err := cnt.RemoveCgroupForContainer(containerId); err != nil {
-			log.Fatalf("ConfigCgroupParameter %v err from RunExec", err)
+			log.Fatalf("RemoveCgroupForContainer %v err from Run", err)
 		}
 		//fmt.Printf("a container quit successfully!\n")
-		return nil
-	},
-}
-
-var ExecCommand = cli.Command{
-	Name:  "exec",
-	Usage: "exec a program on a running container",
-	Action: func(context *cli.Context) error {
-
-		fmt.Printf("exec a program on a running container,the pid is %v,the argsN is %v\n", cm.GetPidStr(), context.NArg())
-
-		cmdargs := make([]string, context.NArg())
-		cmd := cnt.GetCloneContainerProc("zsh", cmdargs) //目前默认开启zsh终端执行
-
-		if err := cmd.Run(); err != nil {
-			fmt.Printf("cmd run error %v in exec\n", err)
-		} //退出该容器后的处理
 		return nil
 	},
 }
@@ -169,10 +156,11 @@ var RunExecCommand = cli.Command{ //该指令是从属于run的,属于run的一�
 
 var PullCommand = cli.Command{
 	Name:  "pull",
-	Usage: "pull an image",
+	Usage: "拉取一个镜像",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name: "img",
+			Name:  "img",
+			Usage: "要拉取的镜像名称",
 		},
 	},
 	Action: func(context *cli.Context) error {
@@ -184,7 +172,7 @@ var PullCommand = cli.Command{
 		if hash, need, err = img.DownloadImageIfNeed(imgName); err != nil {
 			log.Fatalf("download the img %v error %v", imgName, err)
 		}
-		cm.DPrintf("begin process")
+		//cm.DPrintf("begin process")
 		if _, err = img.ProcessLayers(hash, need); err != nil {
 			log.Fatalf("ProcessLayers %v error: %v", hash, err)
 		}
@@ -198,7 +186,7 @@ var PullCommand = cli.Command{
 
 var ImagesCommand = cli.Command{
 	Name:  "images",
-	Usage: "show the images have been downloaded.",
+	Usage: "展示目前已经下载好的镜像",
 	Action: func(ctx *cli.Context) error {
 		return img.ShowImages()
 	},
@@ -212,10 +200,8 @@ func InitCliApp() *cli.App {
 	app.Commands = []cli.Command{
 		RunCommand,
 		RunExecCommand,
-		ExecCommand,
 		ImagesCommand,
 		PullCommand,
 	}
-
 	return app
 }

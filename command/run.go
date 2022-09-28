@@ -2,7 +2,6 @@ package command
 
 import (
 	"fmt"
-	"log"
 	cm "mydocker/common"
 	cnt "mydocker/container"
 	img "mydocker/image"
@@ -17,15 +16,6 @@ func checkRunExecArgslen(args *cli.Args) bool {
 	return true
 }
 
-func RunInit() string { //返回的是id和error
-
-	log.Printf("a container begin running,the pid is %v\n", cm.GetPidStr())
-	containerId := cnt.GetContainerId() //得到一个新的Id
-	cnt.CreateCgroupForContainer(containerId)
-
-	return containerId
-}
-
 func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.CgroupLimit) error {
 	defer os.Exit(1)
 	//其中应该有关于containerId的部分,暂且将第二个参数定为containerID
@@ -34,7 +24,7 @@ func RunExec(runcmd []string, containerId string, imgHash string, limit *cnt.Cgr
 
 	cmd := exec.Command(runcmd[0], runcmd[1:]...)
 
-	cm.DPrintf("the cmd is %v", cmd.String())
+	//cm.DPrintf("the cmd is %v", cmd.String())
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

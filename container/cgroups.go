@@ -74,6 +74,7 @@ func CreateCgroupForContainer(containerId string) error {
 		//在每个容器对应的文件夹之下,有两个关键的文件需要设置
 		procsPath := cm.JoinPath(containpath, procsSubPath)
 		norPath := cm.JoinPath(containpath, norSubPath)
+		//cm.DPrintf("the procsPath is %v,write %v", procsPath, os.Getpid())
 
 		if err := ioutil.WriteFile(procsPath, []byte(cm.GetPidStr()), 0777); err != nil {
 			return fmt.Errorf("WriteFile(%v) failed: %v from CreateCgroupForContainer %v", procsPath, err, containerId)
@@ -85,6 +86,9 @@ func CreateCgroupForContainer(containerId string) error {
 	return nil
 }
 
+//之所以会发生bug是因为cgroup的tast中除了runexec进程,就连runexec的父进程也被写入了,而该进程也正是当前正在执行cgroup移除动作的进程
+//所以应该避免runexec的父进程被写入task,所以需要追踪生成cgroup并写入的过程.
+//需要观察移除的过程
 func RemoveCgroupForContainer(containerId string) error { //目前关闭部分出了问题
 	if !isCgroupRootExist() {
 		return fmt.Errorf("CreateCgroupForContainer failed,root not exist")
@@ -95,19 +99,14 @@ func RemoveCgroupForContainer(containerId string) error { //目前关闭部分�
 		if !cm.IsFileExist(containpath) {
 			continue
 		}
-		cm.DPrintf("remove path %v", containpath)
+		//cm.DPrintf("remove path %v", containpath)
 		rmcmd := exec.Command("rmdir", containpath)
 
 		out, err := rmcmd.CombinedOutput()
 		if err != nil {
 			fmt.Printf("combined out:n%sn", string(out))
 			//log.Fatalf("cmd.Run() failed with %sn", err)
-		}
-		fmt.Printf("combined out:n%sn", string(out))
-
-		cm.DPrintf("%v\n", containpath)
-		if err := rmcmd.Run(); err != nil {
-			return fmt.Errorf("Rmdir(%v) failed: %v from CreateCgroupForContainer %v", containpath, err, containerId)
+			return fmt.Errorf("rmcmd(%v) error %v", rootpath, err)
 		}
 	}
 	return nil
@@ -119,7 +118,7 @@ func configCpu(containerId string, climit float64) error {
 		return nil
 	}
 	cpupath := fmt.Sprintf("%v/%v/cpu.cfs_quota_us", cpuCgroupPath, containerId)
-	if err := ioutil.WriteFile(cpupath, []byte(strconv.Itoa(int(1000000*climit))), 0644); err != nil {
+	if err := ioutil.WriteFile(cpupath, []byte(strconv.Itoa(int(100000*climit))), 0644); err != nil {
 		return err
 	}
 	return nil
@@ -169,12 +168,15 @@ func GetCgroupLimit(climit string, mlimit string, plimit string) *CgroupLimit {
 func ConfigCgroupParameter(containerId string, limit *CgroupLimit) error {
 
 	if err := configCpu(containerId, limit.CpuLimit); err != nil {
+		fmt.Printf("config cpu error\n")
 		return fmt.Errorf("configCpu error %v", err)
 	}
 	if err := configMem(containerId, limit.MemLimit); err != nil {
+		fmt.Printf("config mem error\n")
 		return fmt.Errorf("configMem error %v", err)
 	}
 	if err := configPid(containerId, limit.PidLimit); err != nil {
+		fmt.Printf("config pid error\n")
 		return fmt.Errorf("configPid error %v", err)
 	}
 	return nil
