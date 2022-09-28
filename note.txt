@@ -1,8 +1,0 @@
-在制作镜像时,可以先pull一个demo镜像(也就是这里的busybox)
-$ docker pull busybox
-$ docker run -d busybox top -b //后台运行基于该镜像的容器
-$ docker export -o busybox 04d37a5418cc //将运行中的容器的文件系统导出到压缩包里
-$ tar -xvf busybox.tar -C busybox/  //将压缩包解压并导出
-
-//其中关于lib究竟是干什么的??
-

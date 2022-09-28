@@ -17,9 +17,9 @@ func getFsMntPath(containerId string) string {
 
 func aufsMount(imgfslist []string, containerId string, containerFsPath string, mntPath string) error {
 	mntOptions := "lowerdir=" + strings.Join(imgfslist, ":") + ",upperdir=" + containerFsPath + "/writelayer,workdir=" + containerFsPath + "/worklayer"
-	//cm.DPrintf("The mnt options are %v", mntOptions)
+	cm.DPrintf("The mnt options are %v,the dst is %v", mntOptions, fmt.Sprintf("%v/mnt", containerFsPath))
 	if err := unix.Mount("none", fmt.Sprintf("%v/mnt", containerFsPath), "overlay", 0, mntOptions); err != nil {
-		fmt.Printf("mount error\n")
+		fmt.Printf("mount error %v\n", err)
 		return fmt.Errorf("mount %v error %v", mntOptions, err)
 	}
 

@@ -5,11 +5,22 @@
 
 ## 2.预备工作
 
-### 1)编译
+### 1)创建运行环境
+在这里为了避免cgroup mount和配置golang环境的麻烦,所以在此将该程序的环境打包成一个docker镜像,可以通过docker
+运行该程序.其中运行过程如下:
+```shell
+#处于mydocker目录之下
+$ sudo docker build . -t yfsbox/mydocker_v1 #构建容器
+$ sudo docker run --detach --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro yfsbox/mydocker_v1 #启动该容器
+$ sudo docker ps #查看容器的id
+$ sudo docker exec -it <container_id> /bin/bash #进入该容器
+```
+接下来就直接处于"/mydocker"之下了.
+### 2)编译
 ```shell
 $ go build main.go
 ```
-### 2)运行时开启root权限
+### 3)运行时开启root权限
 ```shell
 $ sudo ./main ..........
 #或者
